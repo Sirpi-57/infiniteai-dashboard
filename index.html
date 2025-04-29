@@ -1,0 +1,2839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinite AI Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+    <style>
+        :root {
+            --color-primary: #7B2CBF;
+            --color-secondary: #9D4EDD;
+            --color-accent: #C77DFF;
+            --color-dark: #240046;
+            --color-light: #E0AAFF;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        .sidebar {
+            background: linear-gradient(to bottom, var(--color-dark), var(--color-primary));
+         }
+
+        .main-content {
+            background-color: #f8f9fa;
+         }
+
+        .card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+         }
+
+        .card:hover {
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+         }
+
+        .primary-gradient {
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+         }
+
+        .dashboard-section {
+            display: none;
+         }
+
+        .dashboard-section.active {
+            display: block;
+         }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            font-weight: 600;
+            color: #333;
+            cursor: pointer;
+            position: relative;
+        }
+
+        th:hover {
+            background-color: #f5f5f5;
+         }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+         }
+
+        .sort-indicator {
+            margin-left: 0.25rem;
+         }
+
+        .loading, .error {
+            text-align: center;
+            padding: 2rem;
+            color: #777;
+        }
+
+        .error {
+            color: #e74c3c;
+         }
+
+        .kpi-card {
+            border-left: 4px solid var(--color-primary);
+         }
+
+        .stat-change.positive {
+            color: #2ecc71;
+         }
+
+        .stat-change.negative {
+            color: #e74c3c;
+         }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+         }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+         }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--color-primary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--color-secondary);
+         }
+
+        /* Date range picker styles */
+        .date-range-picker {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .date-input {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 0.25rem;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            max-width: 800px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+         }
+
+        .close-modal {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 1rem;
+            gap: 0.25rem;
+        }
+
+        .pagination button {
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            background-color: white;
+            border: 1px solid #ddd;
+            cursor: pointer;
+         }
+
+        .pagination button.active {
+            background-color: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+        }
+
+        .pagination button:hover:not(.active) {
+            background-color: #f5f5f5;
+         }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Added for export functionality */
+        .export-button {
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+            color: white;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+         }
+
+        .export-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(123, 44, 191, 0.2);
+        }
+
+        /* JSON Formatter for viewing records */
+        .json-formatter {
+            background-color: #f5f5f5;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+         }
+
+        /* Data visualization container */
+        .visualization-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* Session timeline */
+        .session-timeline {
+            margin: 2rem 0;
+            position: relative;
+        }
+
+        .timeline-line {
+            position: absolute;
+            left: 1rem;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: var(--color-primary);
+            opacity: 0.3;
+         }
+
+        .timeline-item {
+            position: relative;
+            padding-left: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: 0.85rem;
+            top: 0.5rem;
+            width: 0.75rem;
+            height: 0.75rem;
+            border-radius: 50%;
+            background-color: var(--color-primary);
+            transform: translateX(-50%);
+         }
+
+        .timeline-content {
+            background-color: white;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+         }
+    </style>
+</head>
+<body class="flex min-h-screen bg-gray-100">
+    <aside class="sidebar w-64 min-h-screen hidden lg:block">
+        <div class="p-6">
+            <div class="flex items-center mb-8">
+                <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center mr-3">
+                    <span class="text-purple-700 text-xl font-bold">∞</span>
+                  </div>
+                <h1 class="text-xl font-bold text-white">Infinite AI Admin</h1>
+            </div>
+
+            <nav>
+                <ul class="space-y-3">
+                    <li>
+                        <a href="#" class="dashboard-nav-link flex items-center p-3 text-white bg-white bg-opacity-10 rounded-lg" data-target="overview">
+                            <i class="fas fa-tachometer-alt mr-3"></i>
+                            <span>Overview</span>
+                         </a>
+                    </li>
+                    <li>
+                        <a href="#" class="dashboard-nav-link flex items-center p-3 text-white hover:bg-white hover:bg-opacity-10 rounded-lg" data-target="submissions">
+                            <i class="fas fa-paper-plane mr-3"></i>
+                            <span>Form Submissions</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="dashboard-nav-link flex items-center p-3 text-white hover:bg-white hover:bg-opacity-10 rounded-lg" data-target="interactions">
+                            <i class="fas fa-mouse-pointer mr-3"></i>
+                             <span>User Interactions</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="dashboard-nav-link flex items-center p-3 text-white hover:bg-white hover:bg-opacity-10 rounded-lg" data-target="sessions">
+                            <i class="fas fa-users mr-3"></i>
+                            <span>User Sessions</span>
+                        </a>
+                       </li>
+                    <li>
+                        <a href="#" class="dashboard-nav-link flex items-center p-3 text-white hover:bg-white hover:bg-opacity-10 rounded-lg" data-target="support">
+                            <i class="fas fa-headset mr-3"></i>
+                             <span>Support</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+         </div>
+    </aside>
+
+    <div class="lg:hidden fixed top-0 left-0 right-0 z-10 bg-white shadow-md">
+        <div class="flex justify-between items-center p-4">
+            <div class="flex items-center">
+                <div class="w-8 h-8 rounded-full bg-purple-700 flex items-center justify-center mr-2">
+                     <span class="text-white text-sm font-bold">∞</span>
+                </div>
+                <h1 class="text-lg font-bold">Infinite AI Admin</h1>
+            </div>
+            <button id="mobileMenuBtn" class="text-gray-700">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+         </div>
+    </div>
+
+    <div id="mobileMenu" class="lg:hidden fixed top-16 left-0 right-0 z-10 bg-white shadow-md hidden">
+        <nav>
+            <ul>
+                <li>
+                    <a href="#" class="dashboard-nav-link flex items-center p-4 hover:bg-gray-100" data-target="overview">
+                         <i class="fas fa-tachometer-alt mr-3"></i>
+                        <span>Overview</span>
+                    </a>
+                </li>
+                <li>
+                     <a href="#" class="dashboard-nav-link flex items-center p-4 hover:bg-gray-100" data-target="submissions">
+                        <i class="fas fa-paper-plane mr-3"></i>
+                        <span>Form Submissions</span>
+                    </a>
+                   </li>
+                <li>
+                    <a href="#" class="dashboard-nav-link flex items-center p-4 hover:bg-gray-100" data-target="interactions">
+                        <i class="fas fa-mouse-pointer mr-3"></i>
+                         <span>User Interactions</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="dashboard-nav-link flex items-center p-4 hover:bg-gray-100" data-target="sessions">
+                         <i class="fas fa-users mr-3"></i>
+                        <span>User Sessions</span>
+                    </a>
+                </li>
+                <li>
+                     <a href="#" class="dashboard-nav-link flex items-center p-4 hover:bg-gray-100" data-target="support">
+                        <i class="fas fa-headset mr-3"></i>
+                        <span>Support</span>
+                    </a>
+                   </li>
+            </ul>
+        </nav>
+    </div>
+
+    <main class="main-content flex-1 p-4 lg:p-8 lg:ml-64 mt-16 lg:mt-0">
+        <section id="overview-section" class="dashboard-section active">
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold mb-2">Dashboard Overview</h2>
+                 <p class="text-gray-600">Welcome to the Infinite AI Admin Dashboard. View website analytics and user interactions.</p>
+            </div>
+
+            <div class="bg-white p-4 rounded-lg shadow mb-6">
+                <div class="flex flex-wrap items-center justify-between">
+                    <h3 class="text-lg font-semibold mb-2 lg:mb-0">Data Range</h3>
+                    <div class="date-range-picker">
+                        <label>From:</label>
+                        <input type="date" id="dateFrom" class="date-input">
+                        <label>To:</label>
+                        <input type="date" id="dateTo" class="date-input">
+                        <button id="applyDateRange" class="bg-purple-600 text-white px-4 py-2 rounded-lg ml-2">Apply</button>
+                    </div>
+                </div>
+                   </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div class="card kpi-card p-6">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase mb-2">Total Submissions</h3>
+                    <div class="flex items-end justify-between">
+                        <div>
+                            <p class="text-3xl font-bold" id="kpi-submissions">0</p>
+                             <p class="text-sm text-gray-600">All time</p>
+                        </div>
+                        <div class="text-purple-600">
+                            <i class="fas fa-paper-plane text-4xl opacity-20"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card kpi-card p-6">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase mb-2">User Interactions</h3>
+                    <div class="flex items-end justify-between">
+                        <div>
+                             <p class="text-3xl font-bold" id="kpi-interactions">0</p>
+                            <p class="text-sm text-gray-600">All time</p>
+                        </div>
+                         <div class="text-purple-600">
+                            <i class="fas fa-mouse-pointer text-4xl opacity-20"></i>
+                        </div>
+                    </div>
+                 </div>
+
+                <div class="card kpi-card p-6">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase mb-2">Unique Sessions</h3>
+                    <div class="flex items-end justify-between">
+                        <div>
+                            <p class="text-3xl font-bold" id="kpi-sessions">0</p>
+                            <p class="text-sm text-gray-600">All time</p>
+                         </div>
+                        <div class="text-purple-600">
+                            <i class="fas fa-users text-4xl opacity-20"></i>
+                        </div>
+                     </div>
+                </div>
+
+                <div class="card kpi-card p-6">
+                     <h3 class="text-sm font-semibold text-gray-500 uppercase mb-2">Conversion Rate</h3>
+                    <div class="flex items-end justify-between">
+                        <div>
+                            <p class="text-3xl font-bold" id="kpi-conversion">0%</p>
+                             <p class="text-sm text-gray-600">Sessions to submissions</p>
+                        </div>
+                        <div class="text-purple-600">
+                             <i class="fas fa-percentage text-4xl opacity-20"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="card p-6">
+                    <h3 class="font-semibold mb-4">Form Submissions Over Time</h3>
+                     <div class="h-64">
+                        <canvas id="submissionsChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card p-6">
+                    <h3 class="font-semibold mb-4">Interaction Types Distribution</h3>
+                    <div class="h-64">
+                        <canvas id="interactionChart"></canvas>
+                     </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="card p-6">
+                    <h3 class="font-semibold mb-4">Most Clicked Elements</h3>
+                    <div class="h-64">
+                        <canvas id="clickedElementsChart"></canvas>
+                     </div>
+                </div>
+
+                <div class="card p-6">
+                     <h3 class="font-semibold mb-4">Most Viewed Sections</h3>
+                    <div class="h-64">
+                        <canvas id="viewedSectionsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-semibold">Recent Activity</h3>
+                     <a href="#" class="text-purple-600 hover:underline text-sm" id="view-all-activity">View All</a>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Type</th>
+                                 <th>Details</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                         <tbody id="recentActivityTable">
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-gray-500">Loading recent activity...</td>
+                             </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="submissions-section" class="dashboard-section hidden">
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold mb-2">Form Submissions</h2>
+                <p class="text-gray-600">View and manage all form submissions from your website.</p>
+            </div>
+
+                   <div class="bg-white p-4 rounded-lg shadow mb-6">
+                <div class="flex flex-wrap items-center justify-between">
+                    <div class="flex items-center mb-4 lg:mb-0">
+                        <label for="filterFormType" class="mr-2">Filter by Form:</label>
+                        <select id="filterFormType" class="rounded-lg border border-gray-300 p-2">
+                            <option value="all">All Forms</option>
+                            <option value="contact">Contact</option>
+                             <option value="newsletter">Newsletter</option>
+                            <option value="assessment">Assessment</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <input type="text" id="searchSubmissions" placeholder="Search submissions..." class="rounded-lg border border-gray-300 p-2">
+                        <button id="refreshSubmissions" class="bg-purple-600 text-white px-4 py-2 rounded-lg">
+                             <i class="fas fa-sync-alt mr-2"></i>Refresh
+                        </button>
+                        <button id="exportSubmissions" class="export-button">
+                             <i class="fas fa-download mr-2"></i>Export
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card p-6 mb-6">
+                <h3 class="font-semibold mb-4">Form Submissions Distribution</h3>
+                <div style="height: 250px;">
+                    <canvas id="formDistributionChart"></canvas>
+                </div>
+                   </div>
+
+            <div class="card overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table id="submissionsTable" class="min-w-full">
+                       <thead class="bg-gray-50">
+                            <tr>
+                                <th data-sort="receivedTimestamp">Timestamp <span class="sort-indicator"></span></th>
+                                 <th data-sort="formType">Form Type <span class="sort-indicator"></span></th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                 <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="submissionsTableBody">
+                             <tr>
+                                <td colspan="5" class="text-center py-4 text-gray-500">Loading submissions...</td>
+                            </tr>
+                         </tbody>
+                    </table>
+                </div>
+
+                <div class="p-4 border-t border-gray-200">
+                     <div class="pagination" id="submissions-pagination">
+                        </div>
+                </div>
+            </div>
+
+            <div id="submissionModal" class="modal">
+                <div class="modal-content relative">
+                    <span class="close-modal" id="closeSubmissionModal">&times;</span>
+                    <h2 class="text-2xl font-bold mb-4">Submission Details</h2>
+                     <div id="submissionDetails" class="space-y-4">
+                        </div>
+                    <div class="mt-6 flex justify-end">
+                         <button id="closeSubmissionModalBtn" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg mr-2">Close</button>
+                        <button id="replyToSubmission" class="bg-purple-600 text-white px-4 py-2 rounded-lg">Reply</button>
+                    </div>
+                </div>
+             </div>
+        </section>
+
+        <section id="interactions-section" class="dashboard-section hidden">
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold mb-2">User Interactions</h2>
+                <p class="text-gray-600">Analyze how users interact with your website.</p>
+             </div>
+
+            <div class="bg-white p-4 rounded-lg shadow mb-6">
+                <div class="flex flex-wrap items-center justify-between">
+                    <div class="flex items-center mb-4 lg:mb-0">
+                       <label for="filterInteractionType" class="mr-2">Filter by Type:</label>
+                        <select id="filterInteractionType" class="rounded-lg border border-gray-300 p-2">
+                            <option value="all">All Types</option>
+                             <option value="click">Clicks</option>
+                            <option value="pageView">Page Views</option>
+                            <option value="tabSwitch">Tab Switches</option>
+                            <option value="formSubmit">Form Submissions</option>
+                             <option value="sectionView">Section Views</option>
+                            <option value="scrollDepth">Scroll Depth</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <input type="text" id="searchInteractions" placeholder="Search interactions..." class="rounded-lg border border-gray-300 p-2">
+                        <button id="refreshInteractions" class="bg-purple-600 text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-sync-alt mr-2"></i>Refresh
+                        </button>
+                        <button id="exportInteractions" class="export-button">
+                             <i class="fas fa-download mr-2"></i>Export
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div class="card kpi-card p-6">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase  mb-2">Total Clicks</h3>
+                    <div class="flex items-end justify-between">
+                        <div>
+                            <p class="text-3xl font-bold" id="kpi-total-clicks">0</p>
+                              <p class="text-sm text-gray-600">All time</p>
+                        </div>
+                        <div class="text-purple-600">
+                            <i class="fas fa-mouse-pointer text-4xl opacity-20"></i>
+                         </div>
+                    </div>
+                </div>
+
+                <div class="card kpi-card p-6">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase mb-2">Avg. Section Views</h3>
+                    <div class="flex items-end justify-between">
+                        <div>
+                            <p class="text-3xl font-bold" id="kpi-avg-section-views">0</p>
+                              <p class="text-sm text-gray-600">Per session</p>
+                        </div>
+                        <div class="text-purple-600">
+                            <i class="fas fa-eye text-4xl opacity-20"></i>
+                         </div>
+                    </div>
+                </div>
+
+                <div class="card kpi-card p-6">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase mb-2">Avg. Scroll Depth</h3>
+                    <div class="flex items-end justify-between">
+                        <div>
+                            <p class="text-3xl font-bold" id="kpi-scroll-depth">0%</p>
+                              <p class="text-sm text-gray-600">All sessions</p>
+                        </div>
+                        <div class="text-purple-600">
+                            <i class="fas fa-level-down-alt text-4xl opacity-20"></i>
+                         </div>
+                    </div>
+                </div>
+
+                <div class="card kpi-card p-6">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase mb-2">Most Active Page</h3>
+                    <div class="flex items-end justify-between">
+                        <div>
+                             <p class="text-xl font-bold truncate max-w-xs" id="kpi-active-page">-</p>
+                            <p class="text-sm text-gray-600">By interactions</p>
+                        </div>
+                        <div class="text-purple-600">
+                              <i class="fas fa-file-alt text-4xl opacity-20"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="card p-6">
+                    <h3 class="font-semibold mb-4">Event Types Distribution</h3>
+                     <div class="h-64">
+                        <canvas id="eventTypesChart"></canvas>
+                    </div>
+                </div>
+
+                 <div class="card p-6">
+                    <h3 class="font-semibold mb-4">Most Interactive Elements</h3>
+                    <div class="h-64">
+                        <canvas id="topElementsChart"></canvas>
+                     </div>
+                </div>
+            </div>
+
+            <div class="card overflow-hidden">
+                 <div class="overflow-x-auto">
+                    <table id="interactionsTable" class="min-w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                 <th data-sort="receivedTimestamp">Timestamp <span class="sort-indicator"></span></th>
+                                <th data-sort="eventType">Event Type <span class="sort-indicator"></span></th>
+                                <th data-sort="elementId">Element ID <span class="sort-indicator"></span></th>
+                                 <th>Session ID</th>
+                                <th>Actions</th>
+                            </tr>
+                         </thead>
+                        <tbody id="interactionsTableBody">
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-gray-500">Loading interactions...</td>
+                           </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                   <div class="p-4 border-t border-gray-200">
+                    <div class="pagination" id="interactions-pagination">
+                        </div>
+                </div>
+            </div>
+
+            <div id="interactionModal" class="modal">
+                <div class="modal-content relative">
+                     <span class="close-modal" id="closeInteractionModal">&times;</span>
+                    <h2 class="text-2xl font-bold mb-4">Interaction Details</h2>
+                    <div id="interactionDetails" class="space-y-4">
+                        </div>
+                    <div class="mt-6 flex justify-end">
+                        <button id="closeInteractionModalBtn" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg">Close</button>
+                    </div>
+                </div>
+             </div>
+        </section>
+
+        <section id="sessions-section" class="dashboard-section hidden">
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold mb-2">User Sessions</h2>
+                <p class="text-gray-600">Analyze complete user journeys through your website.</p>
+             </div>
+
+            <div class="bg-white p-4 rounded-lg shadow mb-6">
+                <div class="flex flex-wrap items-center justify-between">
+                    <div class="flex items-center mb-4 lg:mb-0">
+                         <input type="text" id="searchSessions" placeholder="Search by session ID..." class="rounded-lg border border-gray-300 p-2">
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                         <button id="refreshSessions" class="bg-purple-600 text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-sync-alt mr-2"></i>Refresh
+                        </button>
+                         <button id="exportSessions" class="export-button">
+                            <i class="fas fa-download mr-2"></i>Export
+                        </button>
+                    </div>
+                </div>
+             </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="card p-6">
+                     <h3 class="font-semibold mb-4">Session Duration Distribution</h3>
+                    <div class="h-64">
+                        <canvas id="sessionDurationChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card p-6">
+                    <h3 class="font-semibold mb-4">Common User Paths</h3>
+                    <div class="h-64">
+                         <canvas id="userPathChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card overflow-hidden mb-6">
+                <div class="overflow-x-auto">
+                    <table id="sessionsTable" class="min-w-full">
+                        <thead class="bg-gray-50">
+                             <tr>
+                                <th data-sort="timestamp">First Seen <span class="sort-indicator"></span></th>
+                                <th>Session ID</th>
+                                 <th data-sort="interactionCount">Interactions <span class="sort-indicator"></span></th>
+                                <th data-sort="duration">Duration <span class="sort-indicator"></span></th>
+                                <th>Actions</th>
+                             </tr>
+                        </thead>
+                        <tbody id="sessionsTableBody">
+                            <tr>
+                               <td colspan="5" class="text-center py-4 text-gray-500">Loading sessions...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                 </div>
+
+                <div class="p-4 border-t border-gray-200">
+                    <div class="pagination" id="sessions-pagination">
+                         </div>
+                </div>
+            </div>
+
+            <div id="sessionModal"  class="modal">
+                <div class="modal-content relative max-w-4xl">
+                    <span class="close-modal" id="closeSessionModal">&times;</span>
+                    <h2 class="text-2xl font-bold mb-4">Session Journey</h2>
+                    <div class="session-info mb-6">
+                       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <p class="text-sm text-gray-500">Session ID</p>
+                                 <p class="font-mono text-sm" id="session-id-display"></p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                 <p class="text-sm text-gray-500">Duration</p>
+                                <p class="font-semibold" id="session-duration-display"></p>
+                            </div>
+                            <div  class="bg-gray-50 p-4 rounded-lg">
+                                <p class="text-sm text-gray-500">Interactions</p>
+                                <p class="font-semibold" id="session-interactions-display"></p>
+                            </div>
+                         </div>
+                    </div>
+
+                    <div class="session-timeline relative">
+                        <div class="timeline-line"></div>
+                        <div id="sessionTimeline" class="space-y-4">
+                            </div>
+                    </div>
+
+                    <div class="mt-6 flex justify-end">
+                         <button id="closeSessionModalBtn" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg">Close</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="support-section" class="dashboard-section hidden">
+            <div  class="mb-6">
+                <h2 class="text-2xl font-bold mb-2">Support</h2>
+                <p class="text-gray-600">Contact our technical team for any issues or assistance with the dashboard.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                 <div class="card p-6">
+                    <div class="text-center mb-4">
+                        <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                             <i class="fas fa-envelope text-purple-600 text-2xl"></i>
+                        </div>
+                        <h3 class="font-semibold text-lg">Email Support</h3>
+                        <p class="text-gray-600 mt-2">Reach out via email for any technical issues or questions.</p>
+                     </div>
+                    <a href="mailto:support@infiniteai.in" class="block text-center bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors">
+                        Contact Support
+                    </a>
+                   </div>
+
+                <div class="card p-6">
+                    <div class="text-center mb-4">
+                       <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-book text-purple-600 text-2xl"></i>
+                        </div>
+                        <h3  class="font-semibold text-lg">Documentation</h3>
+                        <p class="text-gray-600 mt-2">Access detailed guides about using the dashboard features.</p>
+                    </div>
+                    <a href="#" class="block text-center bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors">
+                         View Docs
+                    </a>
+                </div>
+
+                <div class="card p-6">
+                     <div class="text-center mb-4">
+                        <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-phone text-purple-600 text-2xl"></i>
+                         </div>
+                        <h3 class="font-semibold text-lg">Phone Support</h3>
+                        <p class="text-gray-600 mt-2">Call our technical team directly for urgent assistance.</p>
+                    </div>
+                     <a href="tel:+919994481257" class="block text-center bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors">
+                        +91 9994481257
+                    </a>
+                </div>
+            </div>
+
+            <div class="card p-6">
+                <h3 class="font-semibold mb-4">Send us a Message</h3>
+                <form id="supportForm" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         <div>
+                            <label for="supportName" class="block text-gray-700 text-sm font-medium mb-2">Name</label>
+                            <input type="text" id="supportName" name="name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                         </div>
+                        <div>
+                            <label for="supportEmail" class="block text-gray-700 text-sm font-medium mb-2">Email</label>
+                             <input type="email" id="supportEmail" name="email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                        </div>
+                    </div>
+                    <div>
+                         <label for="supportSubject" class="block text-gray-700 text-sm font-medium mb-2">Subject</label>
+                        <input type="text" id="supportSubject" name="subject" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                    </div>
+                    <div>
+                         <label for="supportMessage" class="block text-gray-700 text-sm font-medium mb-2">Message</label>
+                        <textarea id="supportMessage" name="message" rows="5" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" required></textarea>
+                    </div>
+                    <div>
+                         <button type="submit" class="bg-purple-600 text-white py-2 px-6 rounded-lg hover:bg-purple-700 transition-colors">
+                            Send Message
+                        </button>
+                     </div>
+                </form>
+            </div>
+        </section>
+    </main>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+  // --- !! IMPORTANT: API GATEWAY INVOKE URLS !! ---
+  const DASHBOARD_API_URL = 'https://ztnkea3vz1.execute-api.ap-south-1.amazonaws.com/v1/dashboarddata'; // Fetches Form Submissions
+  const INTERACTION_DATA_API_URL = 'https://ztnkea3vz1.execute-api.ap-south-1.amazonaws.com/v1/interactiondata'; // Fetches Interactions
+
+  // --- Data Stores ---
+  let allSubmissionsData = [];
+  let allInteractionsData = [];
+
+  // --- UI Elements ---
+  const dashboardNavLinks = document.querySelectorAll('.dashboard-nav-link');
+  const dashboardSections = document.querySelectorAll('.dashboard-section');
+  const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+  const mobileMenu = document.getElementById('mobileMenu');
+  let mobileMenuOpen = false;
+  
+  // Date Range
+  const dateFromInput = document.getElementById('dateFrom');
+  const dateToInput = document.getElementById('dateTo');
+  const applyDateRangeBtn = document.getElementById('applyDateRange');
+
+  // Overview Elements
+  const kpiSubmissions = document.getElementById('kpi-submissions');
+  const kpiInteractions = document.getElementById('kpi-interactions');
+  const kpiSessions = document.getElementById('kpi-sessions');
+  const kpiConversion = document.getElementById('kpi-conversion');
+  const submissionsChartCanvas = document.getElementById('submissionsChart');
+  const interactionChartCanvas = document.getElementById('interactionChart');
+  const clickedElementsChartCanvas = document.getElementById('clickedElementsChart');
+  const viewedSectionsChartCanvas = document.getElementById('viewedSectionsChart');
+  const recentActivityTable = document.getElementById('recentActivityTable');
+  const viewAllActivityLink = document.getElementById('view-all-activity');
+  
+  // Submission Section Elements
+  const submissionsTableBody = document.getElementById('submissionsTableBody');
+  const filterFormTypeSelect = document.getElementById('filterFormType');
+  const searchSubmissionsInput = document.getElementById('searchSubmissions');
+  const refreshSubmissionsBtn = document.getElementById('refreshSubmissions');
+  const exportSubmissionsBtn = document.getElementById('exportSubmissions');
+  const submissionsPagination = document.getElementById('submissions-pagination');
+  const formDistributionChartCanvas = document.getElementById('formDistributionChart');
+  const submissionModal = document.getElementById('submissionModal');
+  const submissionDetails = document.getElementById('submissionDetails');
+  const closeSubmissionModal = document.getElementById('closeSubmissionModal');
+  const closeSubmissionModalBtn = document.getElementById('closeSubmissionModalBtn');
+  const replyToSubmissionBtn = document.getElementById('replyToSubmission');
+
+  // Interaction Section Elements
+  const interactionsTableBody = document.getElementById('interactionsTableBody');
+  const filterInteractionTypeSelect = document.getElementById('filterInteractionType');
+  const searchInteractionsInput = document.getElementById('searchInteractions');
+  const refreshInteractionsBtn = document.getElementById('refreshInteractions');
+  const exportInteractionsBtn = document.getElementById('exportInteractions');
+  const interactionsPagination = document.getElementById('interactions-pagination');
+  const interactionModal = document.getElementById('interactionModal');
+  const interactionDetails = document.getElementById('interactionDetails');
+  const closeInteractionModal = document.getElementById('closeInteractionModal');
+  const closeInteractionModalBtn = document.getElementById('closeInteractionModalBtn');
+  const kpiTotalClicks = document.getElementById('kpi-total-clicks');
+  const kpiAvgSectionViews = document.getElementById('kpi-avg-section-views');
+  const kpiScrollDepth = document.getElementById('kpi-scroll-depth');
+  const kpiActivePage = document.getElementById('kpi-active-page');
+  const eventTypesChartCanvas = document.getElementById('eventTypesChart');
+  const topElementsChartCanvas = document.getElementById('topElementsChart');
+  
+  // Sessions Section Elements
+  const sessionsTableBody = document.getElementById('sessionsTableBody');
+  const searchSessionsInput = document.getElementById('searchSessions');
+  const refreshSessionsBtn = document.getElementById('refreshSessions');
+  const exportSessionsBtn = document.getElementById('exportSessions');
+  const sessionsPagination = document.getElementById('sessions-pagination');
+  const sessionModal = document.getElementById('sessionModal');
+  const sessionTimeline = document.getElementById('sessionTimeline');
+  const closeSessionModal = document.getElementById('closeSessionModal');
+  const closeSessionModalBtn = document.getElementById('closeSessionModalBtn');
+  const sessionDurationChartCanvas = document.getElementById('sessionDurationChart');
+  const userPathChartCanvas = document.getElementById('userPathChart');
+  
+  // Support Form Elements
+  const supportForm = document.getElementById('supportForm');
+  
+  // --- Chart Objects ---
+  let submissionsChart, interactionChart, clickedElementsChart, viewedSectionsChart;
+  let formDistributionChart, eventTypesChart, topElementsChart;
+  let sessionDurationChart, userPathChart;
+
+  // --- State Variables ---
+  let currentSection = 'overview'; // Start on overview
+  let submissionsSort = { column: 'receivedTimestamp', direction: 'desc' };
+  let interactionsSort = { column: 'receivedTimestamp', direction: 'desc' };
+  let sessionsSort = { column: 'timestamp', direction: 'desc' };
+  let submissionsFilter = 'all';
+  let interactionsFilter = 'all';
+  let submissionsSearch = '';
+  let interactionsSearch = '';
+  let sessionsSearch = '';
+  const itemsPerPage = 10;
+  let submissionsCurrentPage = 1;
+  let interactionsCurrentPage = 1;
+  let sessionsCurrentPage = 1;
+  let isLoadingSubmissions = false;
+  let isLoadingInteractions = false;
+
+  // --- Initialization ---
+  initializeDashboard();
+
+  // --- Core Functions ---
+  function initializeDashboard() {
+    setupEventListeners();
+    initializeCharts();
+    setDefaultDateRange();
+    changeSection(currentSection);
+    // Fetch initial data
+    fetchAllData();
+  }
+
+  function setDefaultDateRange() {
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    
+    if (dateFromInput) dateFromInput.value = formatDateForInput(thirtyDaysAgo);
+    if (dateToInput) dateToInput.value = formatDateForInput(today);
+  }
+
+  function changeSection(sectionId) {
+    dashboardNavLinks.forEach(link => {
+      const isActive = link.getAttribute('data-target') === sectionId;
+      link.classList.toggle('bg-white', isActive);
+      link.classList.toggle('bg-opacity-10', isActive);
+      // For non-active items, ensure hover classes are maintained
+      if (!isActive) {
+        link.classList.add('hover:bg-white', 'hover:bg-opacity-10');
+      }
+    });
+    
+    dashboardSections.forEach(section => {
+      section.classList.toggle('active', section.id === `${sectionId}-section`);
+      section.classList.toggle('hidden', section.id !== `${sectionId}-section`);
+    });
+    
+    currentSection = sectionId;
+
+    // Refresh data for the section if it's empty
+    if (sectionId === 'submissions' && allSubmissionsData.length === 0 && !isLoadingSubmissions) {
+      fetchSubmissionsData();
+    } else if (sectionId === 'interactions' && allInteractionsData.length === 0 && !isLoadingInteractions) {
+      fetchInteractionsData();
+    } else if (sectionId === 'sessions' && allInteractionsData.length === 0 && !isLoadingInteractions) {
+      // Sessions depend on interactions data
+      fetchInteractionsData();
+    } else if (sectionId === 'overview') {
+      // Overview needs both, fetch if either is missing
+      if ((allSubmissionsData.length === 0 && !isLoadingSubmissions) || 
+          (allInteractionsData.length === 0 && !isLoadingInteractions)) {
+        fetchAllData(); // Fetch both for overview
+      } else {
+        // Data already loaded, just update overview visuals
+        updateDashboardOverview();
+      }
+    }
+  }
+
+  function toggleMobileMenu() {
+    mobileMenuOpen = !mobileMenuOpen;
+    if (mobileMenu) {
+      mobileMenu.classList.toggle('hidden', !mobileMenuOpen);
+    }
+  }
+
+  // --- Event Listeners & Data Fetching ---
+  function setupEventListeners() {
+    // Navigation
+    dashboardNavLinks.forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = this.getAttribute('data-target');
+        changeSection(target);
+        if (mobileMenuOpen) {
+          toggleMobileMenu();
+        }
+      });
+    });
+    
+    // Mobile Menu
+    if (mobileMenuBtn) {
+      mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+    }
+
+    // Date Range
+    if (applyDateRangeBtn) {
+      applyDateRangeBtn.addEventListener('click', fetchAllData);
+    }
+
+    // Submission Controls
+    if (filterFormTypeSelect) {
+      filterFormTypeSelect.addEventListener('change', () => {
+        submissionsFilter = filterFormTypeSelect.value;
+        submissionsCurrentPage = 1;
+        renderSubmissionsTable();
+        updateFormDistributionChart();
+      });
+    }
+    if (searchSubmissionsInput) {
+      searchSubmissionsInput.addEventListener('input', debounce(() => {
+        submissionsSearch = searchSubmissionsInput.value.toLowerCase();
+        submissionsCurrentPage = 1;
+        renderSubmissionsTable();
+      }, 300));
+    }
+    if (refreshSubmissionsBtn) {
+      refreshSubmissionsBtn.addEventListener('click', fetchSubmissionsData);
+    }
+    if (exportSubmissionsBtn) {
+      exportSubmissionsBtn.addEventListener('click', () => {
+        exportToCSV(getFilteredSubmissions(), 'infinite_ai_form_submissions');
+      });
+    }
+    document.querySelectorAll('#submissionsTable th[data-sort]').forEach(header => {
+      header.addEventListener('click', handleSortClickSubmissions);
+    });
+    if (closeSubmissionModal) {
+      closeSubmissionModal.addEventListener('click', () => submissionModal.style.display = 'none');
+    }
+    if (closeSubmissionModalBtn) {
+      closeSubmissionModalBtn.addEventListener('click', () => submissionModal.style.display = 'none');
+    }
+    if (replyToSubmissionBtn) {
+      replyToSubmissionBtn.addEventListener('click', () => {
+        const emailElement = document.querySelector('#submissionDetails [data-field="email"]');
+        const nameElement = document.querySelector('#submissionDetails [data-field="name"]');
+        if (emailElement) {
+          const email = emailElement.textContent;
+          const name = nameElement ? nameElement.textContent : 'there';
+          const subject = 'RE: Your Infinite AI Submission';
+          const body = `Hello ${name},\n\nThank you for your submission. We have received your message and will respond shortly.\n\nRegards,\nInfinite AI Team`;
+          window.open(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+        }
+      });
+    }
+
+    // Interaction Controls
+    if (filterInteractionTypeSelect) {
+      filterInteractionTypeSelect.addEventListener('change', () => {
+        interactionsFilter = filterInteractionTypeSelect.value;
+        interactionsCurrentPage = 1;
+        renderInteractionsTable();
+      });
+    }
+    if (searchInteractionsInput) {
+      searchInteractionsInput.addEventListener('input', debounce(() => {
+        interactionsSearch = searchInteractionsInput.value.toLowerCase();
+        interactionsCurrentPage = 1;
+        renderInteractionsTable();
+      }, 300));
+    }
+    if (refreshInteractionsBtn) {
+      refreshInteractionsBtn.addEventListener('click', fetchInteractionsData);
+    }
+    if (exportInteractionsBtn) {
+      exportInteractionsBtn.addEventListener('click', () => {
+        exportToCSV(getFilteredInteractions(), 'infinite_ai_user_interactions');
+      });
+    }
+    document.querySelectorAll('#interactionsTable th[data-sort]').forEach(header => {
+      header.addEventListener('click', handleSortClickInteractions);
+    });
+    if (closeInteractionModal) {
+      closeInteractionModal.addEventListener('click', () => interactionModal.style.display = 'none');
+    }
+    if (closeInteractionModalBtn) {
+      closeInteractionModalBtn.addEventListener('click', () => interactionModal.style.display = 'none');
+    }
+
+    // Session Controls
+    if (searchSessionsInput) {
+      searchSessionsInput.addEventListener('input', debounce(() => {
+        sessionsSearch = searchSessionsInput.value.toLowerCase();
+        sessionsCurrentPage = 1;
+        renderSessionsTable();
+      }, 300));
+    }
+    if (refreshSessionsBtn) {
+      refreshSessionsBtn.addEventListener('click', () => {
+        fetchInteractionsData(); // Re-fetch interactions to rebuild sessions
+      });
+    }
+    if (exportSessionsBtn) {
+      exportSessionsBtn.addEventListener('click', () => {
+        exportToCSV(getProcessedSessions(), 'infinite_ai_user_sessions');
+      });
+    }
+    document.querySelectorAll('#sessionsTable th[data-sort]').forEach(header => {
+      header.addEventListener('click', handleSortClickSessions);
+    });
+    if (closeSessionModal) {
+      closeSessionModal.addEventListener('click', () => sessionModal.style.display = 'none');
+    }
+    if (closeSessionModalBtn) {
+      closeSessionModalBtn.addEventListener('click', () => sessionModal.style.display = 'none');
+    }
+
+    // Support Form
+    if (supportForm) {
+      supportForm.addEventListener('submit', handleSupportFormSubmit);
+    }
+
+    // View All Activity Link
+    if (viewAllActivityLink) {
+      viewAllActivityLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        changeSection('interactions');
+      });
+    }
+
+    // Modal closing on outside click
+    window.addEventListener('click', function(e) {
+      if (e.target === submissionModal) submissionModal.style.display = 'none';
+      if (e.target === interactionModal) interactionModal.style.display = 'none';
+      if (e.target === sessionModal) sessionModal.style.display = 'none';
+    });
+  }
+
+  // --- Data Fetching Functions ---
+  function fetchAllData() {
+    // Fetch both datasets, then update overview
+    setLoadingState(true, 'all');
+    Promise.all([
+      fetchDataInternal(DASHBOARD_API_URL, 'submissions'),
+      fetchDataInternal(INTERACTION_DATA_API_URL, 'interactions')
+    ])
+    .then(([submissionsResult, interactionsResult]) => {
+      allSubmissionsData = submissionsResult || [];
+      allInteractionsData = interactionsResult || [];
+      console.log(`Loaded ${allSubmissionsData.length} submissions and ${allInteractionsData.length} interactions.`);
+      
+      // Update everything after both fetches complete
+      renderSubmissionsTable();
+      renderInteractionsTable();
+      renderSessionsTable(); // Sessions depend on interactions
+      updateDashboardOverview(); // Calculate KPIs and update charts
+      updateFormDistributionChart();
+      updateInteractionCharts();
+    })
+    .catch(error => {
+      console.error("Error fetching all data:", error);
+      showError("Failed to load some dashboard data. Please try refreshing.");
+    })
+    .finally(() => {
+      setLoadingState(false, 'all');
+    });
+  }
+
+  function fetchSubmissionsData() {
+    if (isLoadingSubmissions) return;
+    setLoadingState(true, 'submissions');
+    
+    fetchDataInternal(DASHBOARD_API_URL, 'submissions')
+      .then(data => {
+        allSubmissionsData = data || [];
+        submissionsCurrentPage = 1;
+        renderSubmissionsTable();
+        updateFormDistributionChart();
+        
+        // Update overview if visible
+        if (currentSection === 'overview') {
+          updateDashboardOverview();
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching submissions:', error);
+      })
+      .finally(() => {
+        setLoadingState(false, 'submissions');
+      });
+  }
+
+  function fetchInteractionsData() {
+    if (isLoadingInteractions) return;
+    setLoadingState(true, 'interactions');
+    
+    fetchDataInternal(INTERACTION_DATA_API_URL, 'interactions')
+      .then(data => {
+        allInteractionsData = data || [];
+        interactionsCurrentPage = 1;
+        sessionsCurrentPage = 1; // Reset sessions page too
+        
+        renderInteractionsTable();
+        renderSessionsTable(); // Re-render sessions as they depend on this data
+        updateInteractionCharts();
+        
+        // Update overview if visible
+        if (currentSection === 'overview') {
+          updateDashboardOverview();
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching interactions:', error);
+      })
+      .finally(() => {
+        setLoadingState(false, 'interactions');
+      });
+  }
+
+  function fetchDataInternal(url, dataType) {
+    return fetch(url)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error ${response.status} fetching ${dataType}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (!Array.isArray(data)) {
+          throw new Error(`Invalid data format for ${dataType}`);
+        }
+        console.log(`Successfully fetched ${dataType}`);
+        return data;
+      })
+      .catch(error => {
+        console.error(`Error in fetchDataInternal (${dataType}):`, error);
+        showError(`Failed to load ${dataType} data. ${error.message}`);
+        return []; // Return empty array on error
+      });
+  }
+
+  function setLoadingState(isLoading, type) {
+    if (type === 'submissions' || type === 'all') {
+      isLoadingSubmissions = isLoading;
+      if (submissionsTableBody && isLoading) {
+        submissionsTableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">Loading submissions data...</td></tr>';
+      }
+    }
+    
+    if (type === 'interactions' || type === 'all') {
+      isLoadingInteractions = isLoading;
+      if (interactionsTableBody && isLoading) {
+        interactionsTableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">Loading interactions data...</td></tr>';
+      }
+      if (sessionsTableBody && isLoading) {
+        sessionsTableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">Loading sessions data...</td></tr>';
+      }
+    }
+  }
+
+  function showError(message) {
+    console.error("Dashboard Error:", message);
+    // Could implement a toast notification here
+    alert(message);
+  }
+
+  // --- Data Processing Functions ---
+  function getFilteredSubmissions() {
+    if (!allSubmissionsData) return [];
+    
+    return allSubmissionsData.filter(item => {
+      // Filter by form type
+      if (submissionsFilter !== 'all' && item.formType !== submissionsFilter) {
+        return false;
+      }
+      
+      // Filter by search text
+      if (submissionsSearch) {
+        const searchFields = ['name', 'fullName', 'email', 'message', 'formType', 'companyName'];
+        const matches = searchFields.some(field => {
+          return item[field] && item[field].toString().toLowerCase().includes(submissionsSearch);
+        });
+        if (!matches) return false;
+      }
+      
+      // Date range filter
+      if (dateFromInput && dateFromInput.value) {
+        const fromDate = new Date(dateFromInput.value);
+        const itemDate = new Date(item.receivedTimestamp);
+        if (itemDate < fromDate) return false;
+      }
+      
+      if (dateToInput && dateToInput.value) {
+        const toDate = new Date(dateToInput.value);
+        toDate.setHours(23, 59, 59, 999); // End of the day
+        const itemDate = new Date(item.receivedTimestamp);
+        if (itemDate > toDate) return false;
+      }
+      
+      return true;
+    });
+  }
+
+  function getFilteredInteractions() {
+    if (!allInteractionsData) return [];
+    
+    return allInteractionsData.filter(item => {
+      // Filter by event type
+      if (interactionsFilter !== 'all' && item.eventType !== interactionsFilter) {
+        return false;
+      }
+      
+      // Filter by search text
+      if (interactionsSearch) {
+        const searchFields = ['eventType', 'elementId', 'sessionId', 'pageUrl', 'path'];
+        const matches = searchFields.some(field => {
+          return item[field] && item[field].toString().toLowerCase().includes(interactionsSearch);
+        });
+        if (!matches) return false;
+      }
+      
+      // Date range filter
+      const timestamp = item.clientTimestamp || item.receivedTimestamp;
+      if (dateFromInput && dateFromInput.value) {
+        const fromDate = new Date(dateFromInput.value);
+        const itemDate = new Date(timestamp);
+        if (itemDate < fromDate) return false;
+      }
+      
+      if (dateToInput && dateToInput.value) {
+        const toDate = new Date(dateToInput.value);
+        toDate.setHours(23, 59, 59, 999); // End of the day
+        const itemDate = new Date(timestamp);
+        if (itemDate > toDate) return false;
+      }
+      
+      return true;
+    });
+  }
+
+  function getProcessedSessions() {
+    if (!allInteractionsData || allInteractionsData.length === 0) return [];
+    
+    const sessionMap = {};
+    // Sort interactions chronologically first
+    const sortedInteractions = [...allInteractionsData].sort((a, b) => {
+      const dateA = new Date(a.clientTimestamp || a.receivedTimestamp);
+      const dateB = new Date(b.clientTimestamp || b.receivedTimestamp);
+      return dateA - dateB;
+    });
+    
+    sortedInteractions.forEach(interaction => {
+      const sessionId = interaction.sessionId;
+      if (!sessionId) return; // Skip interactions without session ID
+      
+      const timestamp = interaction.clientTimestamp || interaction.receivedTimestamp;
+      
+      if (!sessionMap[sessionId]) {
+        sessionMap[sessionId] = {
+          sessionId: sessionId,
+          firstSeen: timestamp,
+          lastSeen: timestamp,
+          interactions: [],
+          interactionCount: 0,
+          duration: 0,
+          pages: new Set()
+        };
+      }
+      
+      sessionMap[sessionId].interactions.push(interaction);
+      sessionMap[sessionId].interactionCount++;
+      // Update last seen time if this is later
+      const interactionTime = new Date(timestamp);
+      const lastSeenTime = new Date(sessionMap[sessionId].lastSeen);
+      if (interactionTime > lastSeenTime) {
+        sessionMap[sessionId].lastSeen = timestamp;
+      }
+      
+      // Track visited pages
+      if (interaction.pageUrl) {
+        sessionMap[sessionId].pages.add(interaction.pageUrl);
+      }
+    });
+    
+    // Calculate duration and finalize
+    return Object.values(sessionMap)
+      .map(session => {
+        // Calculate duration in seconds
+        const start = new Date(session.firstSeen);
+        const end = new Date(session.lastSeen);
+        session.duration = Math.round((end - start) / 1000);
+        session.pageCount = session.pages.size;
+        
+        // Apply search filter if needed
+        if (sessionsSearch && !session.sessionId.toLowerCase().includes(sessionsSearch)) {
+          return null; // Exclude if doesn't match search
+        }
+        
+        // Date range filter
+        if (dateFromInput && dateFromInput.value) {
+          const fromDate = new Date(dateFromInput.value);
+          const sessionDate = new Date(session.firstSeen);
+          if (sessionDate < fromDate) return null;
+        }
+        
+        if (dateToInput && dateToInput.value) {
+          const toDate = new Date(dateToInput.value);
+          toDate.setHours(23, 59, 59, 999); // End of the day
+          const sessionDate = new Date(session.lastSeen);
+          if (sessionDate > toDate) return null;
+        }
+        
+        return session;
+      })
+      .filter(session => session !== null); // Remove filtered items
+  }
+
+  // --- Rendering Functions ---
+  function renderSubmissionsTable() {
+    if (!submissionsTableBody) return;
+    
+    const filteredData = getFilteredSubmissions();
+    
+    // Sort data
+    filteredData.sort((a, b) => sortData(a, b, submissionsSort.column, submissionsSort.direction));
+    updateSortIndicators('#submissionsTable', submissionsSort);
+    
+    // Paginate
+    const paginatedData = paginateData(filteredData, submissionsCurrentPage);
+    renderPagination(submissionsPagination, Math.ceil(filteredData.length / itemsPerPage), 
+                     submissionsCurrentPage, page => { 
+                       submissionsCurrentPage = page; 
+                       renderSubmissionsTable(); 
+                     });
+    
+    // Render rows
+    submissionsTableBody.innerHTML = '';
+    
+    if (paginatedData.length === 0) {
+      submissionsTableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-gray-500">No submissions found matching criteria.</td></tr>`;
+      return;
+    }
+    
+    paginatedData.forEach(item => {
+      const row = submissionsTableBody.insertRow();
+      
+      // Timestamp
+      row.insertCell().textContent = formatDateTime(item.receivedTimestamp);
+      
+      // Form Type
+      const typeCell = row.insertCell();
+      typeCell.innerHTML = `<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold">${item.formType || 'unknown'}</span>`;
+      
+      // Name
+      row.insertCell().textContent = item.name || item.fullName || '-';
+      
+      // Email
+      const emailForReply = item.email || item['newsletter-email'];
+      row.insertCell().textContent = emailForReply || '-';
+      
+      // Actions Cell
+      const actionsCell = row.insertCell();
+      const viewButton = createTableButton('<i class="fas fa-eye mr-1"></i> View', 
+                                           () => showSubmissionDetails(item), 
+                                           'text-purple-600 hover:text-purple-800 mr-3');
+      actionsCell.appendChild(viewButton);
+      
+      if (emailForReply) {
+        const replyButton = createTableButton('<i class="fas fa-reply mr-1"></i> Reply', 
+                                             () => {
+                                               const subject = `Re: ${item.formType || 'Website'} Submission`;
+                                               const body = `Hello ${item.name || item.fullName || 'there'},\n\nRegarding your submission:\n\n`;
+                                               window.open(`mailto:${emailForReply}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+                                             }, 
+                                             'text-blue-600 hover:text-blue-800');
+        actionsCell.appendChild(replyButton);
+      }
+    });
+  }
+
+  function renderInteractionsTable() {
+    if (!interactionsTableBody) return;
+    
+    const filteredData = getFilteredInteractions();
+    
+    // Sort data - special handling for date fields
+    filteredData.sort((a, b) => {
+      if (interactionsSort.column === 'receivedTimestamp') {
+        const dateA = new Date(a.clientTimestamp || a.receivedTimestamp);
+        const dateB = new Date(b.clientTimestamp || b.receivedTimestamp);
+        return interactionsSort.direction === 'asc' ? dateA - dateB : dateB - dateA;
+      } else {
+        return sortData(a, b, interactionsSort.column, interactionsSort.direction);
+      }
+    });
+    
+    updateSortIndicators('#interactionsTable', interactionsSort);
+    
+    // Paginate
+    const paginatedData = paginateData(filteredData, interactionsCurrentPage);
+    renderPagination(interactionsPagination, Math.ceil(filteredData.length / itemsPerPage), 
+                     interactionsCurrentPage, page => { 
+                       interactionsCurrentPage = page; 
+                       renderInteractionsTable(); 
+                     });
+    
+    // Render rows
+    interactionsTableBody.innerHTML = '';
+    
+    if (paginatedData.length === 0) {
+      interactionsTableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-gray-500">No interactions found matching criteria.</td></tr>`;
+      return;
+    }
+    
+    paginatedData.forEach(item => {
+      const row = interactionsTableBody.insertRow();
+      
+      // Timestamp
+      row.insertCell().textContent = formatDateTime(item.clientTimestamp || item.receivedTimestamp);
+      
+      // Event Type
+      const typeCell = row.insertCell();
+      typeCell.innerHTML = `<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">${item.eventType || 'unknown'}</span>`;
+      
+      // Element ID
+      // Element ID
+      row.insertCell().textContent = item.elementId || '-';
+      
+      // Session ID - truncate if too long
+      const sessionId = item.sessionId || '-';
+      const sessionCell = row.insertCell();
+      sessionCell.textContent = sessionId.length > 15 ? sessionId.substring(0, 12) + '...' : sessionId;
+      if (sessionId.length > 15) {
+        sessionCell.title = sessionId; // Show full ID on hover
+      }
+      
+      // Actions Cell
+      const actionsCell = row.insertCell();
+      const viewButton = createTableButton('<i class="fas fa-eye mr-1"></i> View', 
+                                           () => showInteractionDetails(item), 
+                                           'text-purple-600 hover:text-purple-800 mr-3');
+      actionsCell.appendChild(viewButton);
+      
+      if (item.sessionId) {
+        const sessionButton = createTableButton('<i class="fas fa-user-clock mr-1"></i> Session', 
+                                               () => {
+                                                 changeSection('sessions');
+                                                 if (searchSessionsInput) {
+                                                   searchSessionsInput.value = item.sessionId;
+                                                   sessionsSearch = item.sessionId.toLowerCase();
+                                                   sessionsCurrentPage = 1;
+                                                   renderSessionsTable();
+                                                 }
+                                               }, 
+                                               'text-blue-600 hover:text-blue-800');
+        actionsCell.appendChild(sessionButton);
+      }
+    });
+  }
+
+  function renderSessionsTable() {
+    if (!sessionsTableBody) return;
+    
+    const sessionsList = getProcessedSessions();
+    
+    // Sort sessions
+    sessionsList.sort((a, b) => {
+      if (sessionsSort.column === 'timestamp' || sessionsSort.column === 'firstSeen') {
+        const dateA = new Date(a.firstSeen);
+        const dateB = new Date(b.firstSeen);
+        return sessionsSort.direction === 'asc' ? dateA - dateB : dateB - dateA;
+      } else if (sessionsSort.column === 'duration') {
+        return sessionsSort.direction === 'asc' ? a.duration - b.duration : b.duration - a.duration;
+      } else if (sessionsSort.column === 'interactionCount') {
+        return sessionsSort.direction === 'asc' ? a.interactionCount - b.interactionCount : b.interactionCount - a.interactionCount;
+      } else {
+        return sortData(a, b, sessionsSort.column, sessionsSort.direction);
+      }
+    });
+    
+    updateSortIndicators('#sessionsTable', sessionsSort);
+    
+    // Paginate
+    const paginatedData = paginateData(sessionsList, sessionsCurrentPage);
+    renderPagination(sessionsPagination, Math.ceil(sessionsList.length / itemsPerPage), 
+                     sessionsCurrentPage, page => { 
+                       sessionsCurrentPage = page; 
+                       renderSessionsTable(); 
+                     });
+    
+    // Render rows
+    sessionsTableBody.innerHTML = '';
+    
+    if (paginatedData.length === 0) {
+      sessionsTableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-gray-500">No sessions found matching criteria.</td></tr>`;
+      return;
+    }
+    
+    paginatedData.forEach(session => {
+      const row = sessionsTableBody.insertRow();
+      
+      // First Seen timestamp
+      row.insertCell().textContent = formatDateTime(session.firstSeen);
+      
+      // Session ID - truncate if too long
+      const sessionCell = row.insertCell();
+      sessionCell.textContent = session.sessionId.length > 15 ? session.sessionId.substring(0, 12) + '...' : session.sessionId;
+      if (session.sessionId.length > 15) {
+        sessionCell.title = session.sessionId; // Show full ID on hover
+      }
+      
+      // Interaction Count
+      row.insertCell().textContent = session.interactionCount;
+      
+      // Duration
+      row.insertCell().textContent = formatDuration(session.duration);
+      
+      // Actions Cell
+      const actionsCell = row.insertCell();
+      const viewButton = createTableButton('<i class="fas fa-eye mr-1"></i> View Journey', 
+                                           () => showSessionDetails(session), 
+                                           'text-purple-600 hover:text-purple-800');
+      actionsCell.appendChild(viewButton);
+    });
+  }
+
+  function renderRecentActivity() {
+    if (!recentActivityTable) return;
+    
+    // Combine and sort submissions and interactions by timestamp
+    const combined = [
+      ...allSubmissionsData.map(item => ({ 
+        ...item, 
+        type: 'submission', 
+        timestamp: item.receivedTimestamp 
+      })),
+      ...allInteractionsData.map(item => ({ 
+        ...item, 
+        type: 'interaction', 
+        timestamp: item.clientTimestamp || item.receivedTimestamp 
+      }))
+    ];
+    
+    // Sort by timestamp (newest first)
+    combined.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+    recentActivityTable.innerHTML = '';
+    const recentItems = combined.slice(0, 10); // Get latest 10
+    
+    if (recentItems.length === 0) {
+      recentActivityTable.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No recent activity.</td></tr>`;
+      return;
+    }
+    
+    recentItems.forEach(item => {
+      const row = recentActivityTable.insertRow();
+      
+      // Timestamp
+      row.insertCell().textContent = formatDateTime(item.timestamp);
+      
+      // Type
+      const typeCell = row.insertCell();
+      if (item.type === 'submission') {
+        typeCell.innerHTML = `<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold">Form: ${item.formType || 'Unknown'}</span>`;
+      } else { // interaction
+        typeCell.innerHTML = `<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">${item.eventType || 'Unknown'}</span>`;
+      }
+      
+      // Details
+      const detailsCell = row.insertCell();
+      if (item.type === 'submission') {
+        detailsCell.textContent = `${item.name || item.fullName || item.email || 'User'} submitted ${item.formType || ''} form`;
+      } else { // interaction
+        detailsCell.textContent = `${item.eventType || ''} on ${item.elementId || 'element'}`;
+        if (item.eventType === 'pageView' && item.path) {
+          detailsCell.textContent += ` (${item.path})`;
+        }
+      }
+      
+      // Action
+      const actionsCell = row.insertCell();
+      const viewButton = createTableButton('<i class="fas fa-eye"></i>', 
+                                           () => {
+                                             if (item.type === 'submission') showSubmissionDetails(item);
+                                             else showInteractionDetails(item);
+                                           }, 
+                                           'text-purple-600 hover:text-purple-800', 
+                                           'View Details');
+      actionsCell.appendChild(viewButton);
+    });
+  }
+
+  function renderPagination(container, totalPages, currentPage, callback) {
+    if (!container) return;
+    container.innerHTML = '';
+    
+    if (totalPages <= 1) return;
+    
+    const maxPagesToShow = 5;
+    
+    // Create a button for pagination
+    function createButton(text, pageNum, isDisabled = false, isActive = false) {
+      const button = document.createElement('button');
+      button.innerHTML = text;
+      button.className = isActive ? 'active' : '';
+      button.disabled = isDisabled;
+      
+      if (!isDisabled && !isActive) {
+        button.addEventListener('click', () => callback(pageNum));
+      }
+      
+      return button;
+    }
+    
+    // Previous button
+    container.appendChild(createButton('&laquo;', currentPage - 1, currentPage === 1));
+    
+    // Page numbers with ellipsis
+    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+    
+    // Adjust if we're at the end
+    if (endPage === totalPages) {
+      startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    }
+    
+    // First page & ellipsis
+    if (startPage > 1) {
+      container.appendChild(createButton('1', 1));
+      if (startPage > 2) {
+        container.appendChild(createButton('...', null, true));
+      }
+    }
+    
+    // Page numbers
+    for (let i = startPage; i <= endPage; i++) {
+      container.appendChild(createButton(i.toString(), i, false, i === currentPage));
+    }
+    
+    // Last page & ellipsis
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        container.appendChild(createButton('...', null, true));
+      }
+      container.appendChild(createButton(totalPages.toString(), totalPages));
+    }
+    
+    // Next button
+    container.appendChild(createButton('&raquo;', currentPage + 1, currentPage === totalPages));
+  }
+
+  // --- Chart Functions ---
+  function initializeCharts() {
+    Chart.defaults.color = '#666';
+    Chart.defaults.font.family = 'Inter, sans-serif';
+    
+    const chartOptions = { 
+      responsive: true, 
+      maintainAspectRatio: false 
+    };
+    
+    const pieChartOptions = { 
+      ...chartOptions, 
+      plugins: { 
+        legend: { 
+          position: 'right' 
+        } 
+      } 
+    };
+    
+    const barChartOptions = { 
+      ...chartOptions, 
+      scales: { 
+        y: { 
+          beginAtZero: true, 
+          ticks: { 
+            precision: 0 
+          } 
+        } 
+      } 
+    };
+    
+    const horizontalBarOptions = { 
+      ...barChartOptions, 
+      indexAxis: 'y' 
+    };
+    
+    const lineChartOptions = { 
+      ...barChartOptions,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            title: function(tooltipItems) {
+              return tooltipItems[0].label;
+            }
+          }
+        }
+      }
+    };
+    
+    // Create chart instances
+    if (submissionsChartCanvas) {
+      submissionsChart = new Chart(submissionsChartCanvas, { 
+        type: 'line', 
+        data: { 
+          labels: [], 
+          datasets: [{ 
+            label: 'Submissions', 
+            data: [], 
+            borderColor: '#7B2CBF', 
+            backgroundColor: 'rgba(123, 44, 191, 0.1)', 
+            fill: true, 
+            tension: 0.4 
+          }] 
+        }, 
+        options: lineChartOptions 
+      });
+    }
+    
+    if (interactionChartCanvas) {
+      interactionChart = new Chart(interactionChartCanvas, { 
+        type: 'doughnut', 
+        data: { 
+          labels: [], 
+          datasets: [{ 
+            data: [], 
+            backgroundColor: ['#7B2CBF', '#9D4EDD', '#C77DFF', '#E0AAFF', '#5A189A', '#3C096C', '#240046'] 
+          }] 
+        }, 
+        options: pieChartOptions 
+      });
+    }
+    
+    if (clickedElementsChartCanvas) {
+      clickedElementsChart = new Chart(clickedElementsChartCanvas, { 
+        type: 'bar', 
+        data: { 
+          labels: [], 
+          datasets: [{ 
+            label: 'Clicks', 
+            data: [], 
+            backgroundColor: '#9D4EDD' 
+          }] 
+        }, 
+        options: horizontalBarOptions 
+      });
+    }
+    
+    if (viewedSectionsChartCanvas) {
+      viewedSectionsChart = new Chart(viewedSectionsChartCanvas, { 
+        type: 'bar', 
+        data: { 
+          labels: [], 
+          datasets: [{ 
+            label: 'Views', 
+            data: [], 
+            backgroundColor: '#7B2CBF' 
+          }] 
+        }, 
+        options: horizontalBarOptions 
+      });
+    }
+    
+    if (formDistributionChartCanvas) {
+      formDistributionChart = new Chart(formDistributionChartCanvas, { 
+        type: 'pie', 
+        data: { 
+          labels: [], 
+          datasets: [{ 
+            data: [], 
+            backgroundColor: ['#7B2CBF', '#9D4EDD', '#C77DFF', '#E0AAFF'] 
+          }] 
+        }, 
+        options: pieChartOptions 
+      });
+    }
+    
+    if (eventTypesChartCanvas) {
+      eventTypesChart = new Chart(eventTypesChartCanvas, { 
+        type: 'pie', 
+        data: { 
+          labels: [], 
+          datasets: [{ 
+            data: [], 
+            backgroundColor: ['#7B2CBF', '#9D4EDD', '#C77DFF', '#E0AAFF', '#5A189A', '#3C096C', '#240046'] 
+          }] 
+        }, 
+        options: pieChartOptions 
+      });
+    }
+    
+    if (topElementsChartCanvas) {
+      topElementsChart = new Chart(topElementsChartCanvas, { 
+        type: 'bar', 
+        data: { 
+          labels: [], 
+          datasets: [{ 
+            label: 'Interactions', 
+            data: [], 
+            backgroundColor: '#9D4EDD' 
+          }] 
+        }, 
+        options: horizontalBarOptions 
+      });
+    }
+    
+    if (sessionDurationChartCanvas) {
+      sessionDurationChart = new Chart(sessionDurationChartCanvas, { 
+        type: 'bar', 
+        data: { 
+          labels: ['0-30s', '30s-2m', '2-5m', '5-10m', '10m+'], 
+          datasets: [{ 
+            label: 'Sessions', 
+            data: [0, 0, 0, 0, 0], 
+            backgroundColor: '#7B2CBF' 
+          }] 
+        }, 
+        options: barChartOptions 
+      });
+    }
+    
+    if (userPathChartCanvas) {
+      // Initialize with empty data
+      userPathChart = new Chart(userPathChartCanvas, {
+        type: 'bar',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Page Visits',
+            data: [],
+            backgroundColor: '#7B2CBF'
+          }]
+        },
+        options: barChartOptions
+      });
+    }
+  }
+
+  function updateDashboardOverview() {
+    const submissionCount = allSubmissionsData.length;
+    const interactionCount = allInteractionsData.length;
+    const sessions = getProcessedSessions();
+    const sessionCount = sessions.length;
+    
+    // Calculate conversion rate (submissions / sessions)
+    const conversion = sessionCount > 0 ? ((submissionCount / sessionCount) * 100).toFixed(1) : 0;
+    
+    // Update KPIs
+    if (kpiSubmissions) kpiSubmissions.textContent = submissionCount;
+    if (kpiInteractions) kpiInteractions.textContent = interactionCount;
+    if (kpiSessions) kpiSessions.textContent = sessionCount;
+    if (kpiConversion) kpiConversion.textContent = `${conversion}%`;
+    
+    // Update Charts
+    updateSubmissionsChart();
+    updateInteractionTypesChart();
+    updateClickedElementsChart();
+    updateViewedSectionsChart();
+    
+    // Update Recent Activity
+    renderRecentActivity();
+    
+    // Update Interaction KPIs
+    updateInteractionKPIs();
+    
+    // Update Session Charts
+    updateSessionCharts(sessions);
+  }
+
+  function updateSubmissionsChart() {
+    if (!submissionsChart) return;
+    
+    // Aggregate submissions by date (e.g., daily for the last 30 days)
+    const countsByDate = aggregateByDate(allSubmissionsData, 'receivedTimestamp');
+    
+    // Sort dates chronologically
+    const sortedDates = Object.keys(countsByDate).sort();
+    const counts = sortedDates.map(date => countsByDate[date]);
+    
+    // Format dates for display
+    const formattedDates = sortedDates.map(date => {
+      const d = new Date(date);
+      return `${d.getDate()}/${d.getMonth() + 1}`;
+    });
+    
+    // Update chart data
+    submissionsChart.data.labels = formattedDates;
+    submissionsChart.data.datasets[0].data = counts;
+    submissionsChart.update();
+  }
+
+  function updateInteractionTypesChart() {
+    if (!interactionChart || allInteractionsData.length === 0) return;
+    
+    const counts = {};
+    allInteractionsData.forEach(item => {
+      const type = item.eventType || 'unknown';
+      counts[type] = (counts[type] || 0) + 1;
+    });
+    
+    interactionChart.data.labels = Object.keys(counts);
+    interactionChart.data.datasets[0].data = Object.values(counts);
+    interactionChart.update();
+  }
+
+  function updateClickedElementsChart() {
+    if (!clickedElementsChart || allInteractionsData.length === 0) return;
+    
+    const clickCounts = {};
+    allInteractionsData
+      .filter(i => i.eventType === 'click')
+      .forEach(item => {
+        const id = item.elementId || 'unknown';
+        clickCounts[id] = (clickCounts[id] || 0) + 1;
+      });
+    
+    // Sort by count and take top 10
+    const sorted = Object.entries(clickCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10);
+    
+    clickedElementsChart.data.labels = sorted.map(entry => entry[0]);
+    clickedElementsChart.data.datasets[0].data = sorted.map(entry => entry[1]);
+    clickedElementsChart.update();
+  }
+
+  function updateViewedSectionsChart() {
+    if (!viewedSectionsChart || allInteractionsData.length === 0) return;
+    
+    const viewCounts = {};
+    allInteractionsData
+      .filter(i => i.eventType === 'sectionView')
+      .forEach(item => {
+        const id = item.elementId || 'unknown';
+        viewCounts[id] = (viewCounts[id] || 0) + 1;
+      });
+    
+    // Sort by count and take top 10
+    const sorted = Object.entries(viewCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10);
+    
+    viewedSectionsChart.data.labels = sorted.map(entry => entry[0]);
+    viewedSectionsChart.data.datasets[0].data = sorted.map(entry => entry[1]);
+    viewedSectionsChart.update();
+  }
+
+  function updateFormDistributionChart() {
+    if (!formDistributionChart || !allSubmissionsData || allSubmissionsData.length === 0) return;
+    
+    const formTypeCounts = {};
+    allSubmissionsData.forEach(submission => {
+      const formType = submission.formType || 'unknown';
+      formTypeCounts[formType] = (formTypeCounts[formType] || 0) + 1;
+    });
+    
+    formDistributionChart.data.labels = Object.keys(formTypeCounts);
+    formDistributionChart.data.datasets[0].data = Object.values(formTypeCounts);
+    formDistributionChart.update();
+  }
+
+  function updateInteractionCharts() {
+    if (!allInteractionsData || allInteractionsData.length === 0) return;
+    
+    // Update event types distribution chart
+    if (eventTypesChart) {
+      const typeCounts = {};
+      allInteractionsData.forEach(interaction => {
+        const type = interaction.eventType || 'unknown';
+        typeCounts[type] = (typeCounts[type] || 0) + 1;
+      });
+      
+      eventTypesChart.data.labels = Object.keys(typeCounts);
+      eventTypesChart.data.datasets[0].data = Object.values(typeCounts);
+      eventTypesChart.update();
+    }
+    
+    // Update top interactive elements chart
+    if (topElementsChart) {
+      const elementCounts = {};
+      allInteractionsData
+        .filter(i => i.elementId) // Only count interactions with element IDs
+        .forEach(interaction => {
+          const elementId = interaction.elementId;
+          elementCounts[elementId] = (elementCounts[elementId] || 0) + 1;
+        });
+      
+      // Sort by count and take top 10
+      const sorted = Object.entries(elementCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+      
+      topElementsChart.data.labels = sorted.map(entry => entry[0]);
+      topElementsChart.data.datasets[0].data = sorted.map(entry => entry[1]);
+      topElementsChart.update();
+    }
+    
+    // Update interaction KPIs
+    updateInteractionKPIs();
+  }
+
+  function updateInteractionKPIs() {
+    if (!allInteractionsData) return;
+    
+    // Total clicks
+    const totalClicks = allInteractionsData.filter(i => i.eventType === 'click').length;
+    if (kpiTotalClicks) kpiTotalClicks.textContent = totalClicks;
+    
+    // Average section views per session
+    const sessions = getProcessedSessions();
+    let totalSectionViews = 0;
+    let sessionsWithViews = 0;
+    
+    sessions.forEach(session => {
+      const sectionViews = session.interactions.filter(i => i.eventType === 'sectionView').length;
+      if (sectionViews > 0) {
+        totalSectionViews += sectionViews;
+        sessionsWithViews++;
+      }
+    });
+    
+    const avgSectionViews = sessionsWithViews > 0 ? 
+      Math.round((totalSectionViews / sessionsWithViews) * 10) / 10 : 0;
+    
+    if (kpiAvgSectionViews) kpiAvgSectionViews.textContent = avgSectionViews;
+    
+    // Average scroll depth
+    const scrollEvents = allInteractionsData.filter(i => i.eventType === 'scrollDepth');
+    let totalDepth = 0;
+    
+    scrollEvents.forEach(event => {
+      if (event.scrollPercentage) {
+        totalDepth += parseFloat(event.scrollPercentage);
+      }
+    });
+    
+    const avgScrollDepth = scrollEvents.length > 0 ? 
+      Math.round((totalDepth / scrollEvents.length)) : 0;
+    
+    if (kpiScrollDepth) kpiScrollDepth.textContent = `${avgScrollDepth}%`;
+    
+    // Most active page
+    const pageCounts = {};
+    allInteractionsData.forEach(interaction => {
+      const page = interaction.path || interaction.pageUrl || 'unknown';
+      pageCounts[page] = (pageCounts[page] || 0) + 1;
+    });
+    
+    // Find page with most interactions
+    let mostActivePage = 'None';
+    let maxCount = 0;
+    
+    for (const [page, count] of Object.entries(pageCounts)) {
+      if (count > maxCount) {
+        maxCount = count;
+        mostActivePage = page;
+      }
+    }
+    
+    if (kpiActivePage) kpiActivePage.textContent = mostActivePage;
+  }
+
+  function updateSessionCharts(sessions) {
+    if (!sessions || sessions.length === 0) return;
+    
+    // Update duration distribution chart
+    if (sessionDurationChart) {
+      const durationBuckets = [0, 0, 0, 0, 0]; // 0-30s, 30s-2m, 2-5m, 5-10m, 10m+
+      
+      sessions.forEach(session => {
+        const duration = session.duration;
+        if (duration <= 30) {
+          durationBuckets[0]++;
+        } else if (duration <= 120) {
+          durationBuckets[1]++;
+        } else if (duration <= 300) {
+          durationBuckets[2]++;
+        } else if (duration <= 600) {
+          durationBuckets[3]++;
+        } else {
+          durationBuckets[4]++;
+        }
+      });
+      
+      sessionDurationChart.data.datasets[0].data = durationBuckets;
+      sessionDurationChart.update();
+    }
+    
+    // Update user paths chart
+    if (userPathChart) {
+      // Count page views by path
+      const pathCounts = {};
+      
+      sessions.forEach(session => {
+        session.interactions
+          .filter(interaction => interaction.path || interaction.pageUrl)
+          .forEach(interaction => {
+            const path = interaction.path || (interaction.pageUrl ? new URL(interaction.pageUrl).pathname : 'unknown');
+            pathCounts[path] = (pathCounts[path] || 0) + 1;
+          });
+      });
+      
+      // Sort by count and take top 8
+      const sorted = Object.entries(pathCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8); // Limit to 8 for readability
+      
+      userPathChart.data.labels = sorted.map(entry => entry[0]);
+      userPathChart.data.datasets[0].data = sorted.map(entry => entry[1]);
+      userPathChart.update();
+    }
+  }
+
+  // --- Modal Functions ---
+  function showSubmissionDetails(submission) {
+    if (!submissionModal || !submissionDetails) return;
+    
+    submissionDetails.innerHTML = ''; // Clear previous
+    
+    let detailsHtml = '<dl class="divide-y divide-gray-200">';
+    
+    // Display order preference for fields
+    const displayOrder = [
+      'formType', 'receivedTimestamp', 'name', 'fullName', 'email', 
+      'newsletter-email', 'phone', 'service', 'message', 'companyName', 
+      'position', 'industry', 'companySize', 'businessVerticals', 
+      'marketingApproach', 'salesProcess', 'customerCare', 'techLevel', 
+      'currentTech', 'aiExperience', 'businessChallenges', 'aiGoals', 
+      'timeframe', 'additionalInfo', 'consent', 'pageUrl', 
+      'clientTimestamp', 'sessionId'
+    ];
+    
+    // Add fields in order, then any remaining fields
+    const processedKeys = new Set(['submissionId']); // Keys to always exclude
+    
+    displayOrder.forEach(key => {
+      if (submission.hasOwnProperty(key) && !processedKeys.has(key)) {
+        detailsHtml += createDetailRow(key, submission[key]);
+        processedKeys.add(key);
+      }
+    });
+    
+    // Add any other fields not in the preferred order
+    for (const key in submission) {
+      if (!processedKeys.has(key)) {
+        detailsHtml += createDetailRow(key, submission[key]);
+      }
+    }
+    
+    detailsHtml += '</dl>';
+    submissionDetails.innerHTML = detailsHtml;
+    
+    // Setup reply button
+    const emailForReply = submission.email || submission['newsletter-email'];
+    
+    if (replyToSubmissionBtn) {
+      replyToSubmissionBtn.disabled = !emailForReply;
+      
+      if (emailForReply) {
+        replyToSubmissionBtn.onclick = () => {
+          const subject = `Re: ${submission.formType || 'Website'} Submission`;
+          const body = `Hello ${submission.name || submission.fullName || 'there'},\n\nRegarding your submission:\n\n`;
+          window.open(`mailto:${emailForReply}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+        };
+      }
+    }
+    
+    submissionModal.style.display = 'flex'; // Show modal
+  }
+
+  function showInteractionDetails(interaction) {
+    if (!interactionModal || !interactionDetails) return;
+    
+    interactionDetails.innerHTML = '';
+    
+    const jsonFormatter = document.createElement('pre');
+    jsonFormatter.className = 'json-formatter';
+    
+    // Sort keys alphabetically before stringifying
+    const sortedInteraction = Object.keys(interaction)
+      .sort()
+      .reduce((obj, key) => { 
+        obj[key] = interaction[key]; 
+        return obj; 
+      }, {});
+    
+    jsonFormatter.textContent = JSON.stringify(sortedInteraction, null, 2);
+    interactionDetails.appendChild(jsonFormatter);
+    
+    interactionModal.style.display = 'flex';
+  }
+
+  function showSessionDetails(session) {
+    if (!sessionModal || !sessionTimeline) return;
+    
+    // Update session info header
+    document.getElementById('session-id-display').textContent = session.sessionId;
+    document.getElementById('session-duration-display').textContent = formatDuration(session.duration);
+    document.getElementById('session-interactions-display').textContent = session.interactionCount;
+    
+    sessionTimeline.innerHTML = ''; // Clear previous timeline
+    
+    if (!session.interactions || session.interactions.length === 0) {
+      sessionTimeline.innerHTML = `
+        <div class="timeline-item">
+          <div class="timeline-content">
+            <p class="text-gray-500">No detailed interaction data available for this session.</p>
+          </div>
+        </div>`;
+    } else {
+      // Sort interactions chronologically
+      const sortedInteractions = [...session.interactions].sort((a, b) => {
+        const timeA = new Date(a.clientTimestamp || a.receivedTimestamp);
+        const timeB = new Date(b.clientTimestamp || b.receivedTimestamp);
+        return timeA - timeB;
+      });
+      
+      sortedInteractions.forEach((interaction, index) => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'timeline-item';
+        
+        const timestamp = interaction.clientTimestamp || interaction.receivedTimestamp;
+        let timeDisplay = formatTime(timestamp);
+        
+        // Calculate time difference from previous interaction
+        if (index > 0) {
+          const prevTimestamp = sortedInteractions[index - 1].clientTimestamp || 
+                                sortedInteractions[index - 1].receivedTimestamp;
+          const timeDiff = Math.round(
+            (new Date(timestamp) - new Date(prevTimestamp)) / 1000
+          );
+          
+          if (timeDiff >= 0) {
+            timeDisplay += ` (+${formatDuration(timeDiff)})`;
+          }
+        }
+        
+        const description = getInteractionDescription(interaction);
+        
+        itemDiv.innerHTML = `
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <div class="text-sm text-gray-500 mb-1">${timeDisplay}</div>
+            <div class="font-medium">${description}</div>
+            ${interaction.pageUrl ? 
+              `<div class="text-xs text-gray-500 mt-1 break-all">URL: ${escapeHtml(interaction.pageUrl)}</div>` : ''}
+          </div>`;
+        
+        sessionTimeline.appendChild(itemDiv);
+      });
+    }
+    
+    sessionModal.style.display = 'flex';
+  }
+
+  function getInteractionDescription(interaction) {
+    if (!interaction) return 'Unknown Event';
+    
+    try {
+      switch (interaction.eventType) {
+        case 'pageView':
+          let pagePath = interaction.path;
+          if (!pagePath && interaction.pageUrl) {
+            try {
+              pagePath = new URL(interaction.pageUrl).pathname;
+            } catch (e) {
+              pagePath = interaction.pageUrl;
+            }
+          }
+          return `Viewed page: ${pagePath || 'unknown'}`;
+        case 'click':
+          return `Clicked: ${interaction.elementId || 'unknown element'}`;
+        case 'sectionView':
+          return `Viewed section: ${interaction.elementId || 'unknown section'}`;
+        case 'tabSwitch':
+          return `Switched to tab: ${interaction.elementId || 'unknown tab'}`;
+        case 'formSubmit':
+          return `Attempted submit: ${interaction.formType || 'unknown form'}`;
+        case 'scrollDepth':
+          return `Scrolled to ${interaction.scrollPercentage || 0}% of page`;
+        default:
+          return `${interaction.eventType || 'Unknown event'}: ${interaction.elementId || ''}`;
+      }
+    } catch (e) {
+      console.error('Error formatting interaction description:', e);
+      return 'Error formatting interaction';
+    }
+  }
+
+  // --- Sorting Functions ---
+  function handleSortClickSubmissions(e) {
+    const column = e.currentTarget.getAttribute('data-sort');
+    
+    if (submissionsSort.column === column) {
+      // Toggle direction if same column
+      submissionsSort.direction = submissionsSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+      // New column, default to descending for dates, ascending for others
+      submissionsSort.column = column;
+      submissionsSort.direction = column === 'receivedTimestamp' ? 'desc' : 'asc';
+    }
+    
+    renderSubmissionsTable();
+  }
+
+  function handleSortClickInteractions(e) {
+    const column = e.currentTarget.getAttribute('data-sort');
+    
+    if (interactionsSort.column === column) {
+      // Toggle direction if same column
+      interactionsSort.direction = interactionsSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+      // New column, default to descending for dates, ascending for others
+      interactionsSort.column = column;
+      interactionsSort.direction = column === 'receivedTimestamp' ? 'desc' : 'asc';
+    }
+    
+    renderInteractionsTable();
+  }
+
+  function handleSortClickSessions(e) {
+    const column = e.currentTarget.getAttribute('data-sort');
+    
+    if (sessionsSort.column === column) {
+      // Toggle direction if same column
+      sessionsSort.direction = sessionsSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+      // New column, default to descending for dates, ascending for others
+      sessionsSort.column = column;
+      sessionsSort.direction = column === 'timestamp' ? 'desc' : 'asc';
+    }
+    
+    renderSessionsTable();
+  }
+
+  function sortData(a, b, column, direction, isDate = false) {
+    let valueA = a[column] || '';
+    let valueB = b[column] || '';
+    let comparison = 0;
+    
+    if (isDate) {
+      const dateA = new Date(valueA);
+      const dateB = new Date(valueB);
+      
+      if (!isNaN(dateA) && !isNaN(dateB)) {
+        comparison = dateA - dateB;
+      } else if (!isNaN(dateA)) {
+        comparison = -1; // Valid dates first
+      } else if (!isNaN(dateB)) {
+        comparison = 1;
+      }
+    } else if (typeof valueA === 'number' && typeof valueB === 'number') {
+      comparison = valueA - valueB;
+    } else if (typeof valueA === 'string' && typeof valueB === 'string') {
+      comparison = valueA.localeCompare(valueB);
+    } else {
+      // Basic comparison fallback
+      if (valueA > valueB) comparison = 1;
+      else if (valueA < valueB) comparison = -1;
+    }
+    
+    return direction === 'asc' ? comparison : -comparison;
+  }
+
+  function updateSortIndicators(tableSelector, sortState) {
+    document.querySelectorAll(`${tableSelector} th[data-sort]`).forEach(header => {
+      const column = header.getAttribute('data-sort');
+      const indicator = header.querySelector('.sort-indicator');
+      
+      if (indicator) {
+        indicator.textContent = (column === sortState.column) ? 
+          (sortState.direction === 'asc' ? ' ▲' : ' ▼') : '';
+      }
+    });
+  }
+
+  // --- Utility Functions ---
+  function createTableButton(html, onClick, classes = '', title = '') {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.innerHTML = html;
+    button.className = classes;
+    
+    if (title) {
+      button.title = title;
+    }
+    
+    button.addEventListener('click', onClick);
+    return button;
+  }
+
+  function paginateData(data, currentPage) {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return data.slice(startIndex, startIndex + itemsPerPage);
+  }
+
+  function createDetailRow(key, value) {
+    return `
+      <div class="py-3 sm:py-4 grid grid-cols-3 gap-4">
+        <dt class="text-sm font-medium text-gray-500">${formatKeyForDisplay(key)}</dt>
+        <dd class="text-sm text-gray-900 mt-1 sm:mt-0 sm:col-span-2" data-field="${key}">${formatValue(value)}</dd>
+      </div>`;
+  }
+
+  function formatKeyForDisplay(key) {
+    return key.replace(/([A-Z])/g, ' $1')
+              .replace(/_/g, ' ')
+              .replace(/-/g, ' ')
+              .replace(/^./, str => str.toUpperCase());
+  }
+
+  function formatValue(value) {
+    if (value === null || value === undefined) {
+      return '-';
+    }
+    
+    if (Array.isArray(value)) {
+      return '<ul class="list-disc pl-5">' + 
+             value.map(item => `<li>${formatValue(item)}</li>`).join('') + 
+             '</ul>';
+    } else if (typeof value === 'object' && value !== null) {
+      return '<pre class="json-formatter">' + 
+             escapeHtml(JSON.stringify(value, null, 2)) + 
+             '</pre>';
+    } else if (typeof value === 'string' && 
+              (value.startsWith('http://') || value.startsWith('https://'))) {
+      return `<a href="${escapeHtml(value)}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">${escapeHtml(value)}</a>`;
+    } else if (typeof value === 'string' && 
+              /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) {
+      return formatDateTime(value); // Format ISO dates
+    } else if (typeof value === 'boolean') {
+      return value ? 'Yes' : 'No';
+    }
+    
+    return escapeHtml(String(value));
+  }
+
+  function escapeHtml(unsafe) {
+    if (typeof unsafe !== 'string') return unsafe;
+    
+    return unsafe
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function formatDateTime(timestamp) {
+    if (!timestamp) return 'N/A';
+    
+    try {
+      const date = new Date(timestamp);
+      
+      if (isNaN(date)) return 'Invalid Date';
+      
+      // Format as localized date and time
+      return date.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    } catch (e) {
+      return 'Invalid Date';
+    }
+  }
+
+  function formatTime(timestamp) {
+    if (!timestamp) return 'N/A';
+    
+    try {
+      const date = new Date(timestamp);
+      
+      if (isNaN(date)) return 'Invalid Time';
+      
+      // Format as localized time only
+      return date.toLocaleTimeString(undefined, {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    } catch (e) {
+      return 'Invalid Time';
+    }
+  }
+
+  function formatDuration(seconds) {
+    if (seconds === null || seconds === undefined) return 'N/A';
+    
+    seconds = Number(seconds);
+    if (isNaN(seconds)) return 'N/A';
+    
+    if (seconds < 60) {
+      return `${seconds}s`;
+    }
+    
+    if (seconds < 3600) {
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+      return `${minutes}m ${remainingSeconds}s`;
+    }
+    
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${hours}h ${minutes}m`;
+  }
+
+  function formatDateForInput(date) {
+    return date.toISOString().split('T')[0];
+  }
+
+  function formatDateForFilename(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  function debounce(func, delay) {
+    let timeout;
+    
+    return function() {
+      const context = this;
+      const args = arguments;
+      
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        func.apply(context, args);
+      }, delay);
+    };
+  }
+
+  function aggregateByDate(data, dateField) {
+    const counts = {};
+    const dateFrom = dateFromInput && dateFromInput.value ? new Date(dateFromInput.value + 'T00:00:00Z') : null;
+    const dateTo = dateToInput && dateToInput.value ? new Date(dateToInput.value + 'T23:59:59Z') : null;
+    
+    data.forEach(item => {
+      const timestamp = item[dateField];
+      if (!timestamp) return;
+      
+      const itemDate = new Date(timestamp);
+      if (isNaN(itemDate)) return; // Skip invalid dates
+      
+      // Apply date filter
+      if ((dateFrom && itemDate < dateFrom) || (dateTo && itemDate > dateTo)) {
+        return;
+      }
+      
+      const dateString = itemDate.toISOString().split('T')[0]; // Group by YYYY-MM-DD
+      counts[dateString] = (counts[dateString] || 0) + 1;
+    });
+    
+    // Sort by date
+    return Object.entries(counts)
+      .sort((a, b) => new Date(a[0]) - new Date(b[0]))
+      .reduce((obj, [key, value]) => { 
+        obj[key] = value; 
+        return obj; 
+      }, {});
+  }
+
+  // --- Export Functions ---
+  function exportToCSV(dataToExport, filename) {
+    if (!dataToExport || dataToExport.length === 0) {
+      alert('No data to export');
+      return;
+    }
+    
+    // Get all keys from all objects to ensure we have all possible columns
+    const allKeys = new Set();
+    dataToExport.forEach(item => {
+      Object.keys(item).forEach(key => allKeys.add(key));
+    });
+    
+    // Convert to array and sort alphabetically
+    const headers = Array.from(allKeys).sort();
+    
+    // Create CSV content
+    let csvContent = headers.join(',') + '\n';
+    
+    dataToExport.forEach(item => {
+      const row = headers.map(header => {
+        let value = item[header];
+        
+        // Handle empty values
+        if (value === undefined || value === null) {
+          return '';
+        }
+        
+        // Format and escape values
+        if (typeof value === 'object') {
+          value = JSON.stringify(value);
+        }
+        
+        value = String(value);
+        
+        // Escape commas, quotes, and wrap in quotes
+        if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+          return `"${value.replace(/"/g, '""')}"`;
+        }
+        
+        return value;
+      });
+      
+      csvContent += row.join(',') + '\n';
+    });
+    
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const today = formatDateForFilename(new Date());
+    
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${filename}_${today}.csv`);
+    link.style.display = 'none';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // --- Form Handling ---
+  function handleSupportFormSubmit(e) {
+    e.preventDefault();
+    
+    // Simple client-side validation
+    const name = document.getElementById('supportName').value;
+    const email = document.getElementById('supportEmail').value;
+    const subject = document.getElementById('supportSubject').value;
+    const message = document.getElementById('supportMessage').value;
+    
+    if (!name || !email || !subject || !message) {
+      alert('Please fill in all fields');
+      return;
+    }
+    
+    // In a real application, this would send data to a server
+    // For demo purposes, just simulate a successful submission
+    alert('Thank you for your message. Our team will get back to you soon!');
+    e.target.reset();
+  }
+
+}); // End of the DOMContentLoaded event listener   
+    </script>
+</body>
+</html>
