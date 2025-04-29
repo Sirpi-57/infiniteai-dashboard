@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "infinite-ai-website"
+  },
+  "targets": {
+    "infinite-ai-website": {
+      "hosting": {
+        "dashboard-infiniteai": [
+          "dashboard-infiniteai"
+        ]
+      }
+    }
+  }
+}
